@@ -35,54 +35,48 @@ class TaskResponse(BaseModel):
     commit_sha: str
     pages_url: str
 
-@app.get("/")
-async def health_check():
-    return {"status": "TDS Project 1 API is running", "version": "1.0.0"}
+# --- GitHub and LLM utility functions ---
 
-@app.post("/handle_task", response_model=TaskResponse)
-async def handle_task(data: TaskRequest):
-    if data.secret != SECRET:
-        raise HTTPException(status_code=403, detail="Invalid secret")
-    try:
-        if data.round == 1:
-            return await handle_round_one(data)
-        elif data.round == 2:
-            return await handle_round_two(data)
-        else:
-            raise HTTPException(status_code=400, detail="Invalid round")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+def get_github_username():
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    response = requests.get("https://api.github.com/user", headers=headers)
+    return response.json()["login"]
 
-# ----------------- Helper Logic Below -----------------
+def create_github_repo(repo_name: str) -> dict:
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    payload = {
+        "name": repo_name,
+        "private": False,
+        "auto_init": True,
+        "license_template": "mit"
+    }
+    response = requests.post("https://api.github.com/user/repos", headers=headers, json=payload)
+    if response.status_code == 201:
+        return response.json()
+    else:
+        raise Exception(f"Repo creation failed: {response.status_code}, {response.text}")
 
-async def handle_round_one(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_aipipe(data.brief, data.task)
-    repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
-    repo_info = create_github_repo(repo_name)
-    push_files_to_repo(repo_name, files)
-    enable_github_pages(repo_name)
-    return TaskResponse(
-        email=data.email,
-        task=data.task,
-        round=data.round,
-        nonce=data.nonce,
-        repo_url=repo_info["html_url"],
-        commit_sha="main",
-        pages_url=f"https://{get_github_username()}.github.io/{repo_name}"
-    )
+def push_files_to_repo(repo_name: str, files: dict):
+    username = get_github_username()
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    for filename, content in files.items():
+        content_b64 = base64.b64encode(content.encode('utf-8')).decode('ascii')
+        url = f"https://api.github.com/repos/{username}/{repo_name}/contents/{filename}"
+        existing = requests.get(url, headers=headers)
+        payload = {"message": f"Add {filename}", "content": content_b64}
+        if existing.status_code == 200:
+            payload["sha"] = existing.json()["sha"]
+        response = requests.put(url, headers=headers, json=payload)
+        if response.status_code not in [200, 201]:
+            raise Exception(f"Failed to push {filename}: {response.status_code}, {response.text}")
 
-async def handle_round_two(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_aipipe(f"UPDATE: {data.brief}", data.task)
-    repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
-    push_files_to_repo(repo_name, files)
-    return TaskResponse(
-        email=data.email,
-        task=data.task,
-        round=data.round,
-        nonce=data.nonce,
-        repo_url=f"https://github.com/{get_github_username()}/{repo_name}",
-        commit_sha="main",
-        pages_url=f"https://{get_github_username()}.github.io/{repo_name}"
+def enable_github_pages(repo_name: str):
+    username = get_github_username()
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    payload = {"source": {"branch": "main", "path": "/"}}
+    requests.post(
+        f"https://api.github.com/repos/{username}/{repo_name}/pages",
+        headers=headers, json=payload
     )
 
 async def generate_code_with_aipipe(brief: str, task: str) -> dict:
@@ -119,8 +113,10 @@ Return ONLY the HTML code."""
     )
     if response.status_code != 200:
         raise Exception(f"AIPipe API error: {response.status_code}: {response.text}")
+    
     result = response.json()
     html_code = result["choices"][0]["message"]["content"].strip()
+    # Markdown cleanup
     if "```
         html_code = html_code.split("```html").split("```
     elif "```" in html_code:
@@ -132,46 +128,54 @@ Return ONLY the HTML code."""
         "README.md": f"# {task}\n\n{brief}\n\nOpen index.html to use the application."
     }
 
-def get_github_username():
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    response = requests.get("https://api.github.com/user", headers=headers)
-    return response.json()["login"]
+# --- Endpoint and round handlers ---
 
-def create_github_repo(repo_name: str) -> dict:
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    payload = {
-        "name": repo_name,
-        "private": False,
-        "auto_init": True,
-        "license_template": "mit"
-    }
-    response = requests.post("https://api.github.com/user/repos", headers=headers, json=payload)
-    if response.status_code == 201:
-        return response.json()
-    else:
-        raise Exception(f"Repo creation failed: {response.status_code}, {response.text}")
+@app.get("/")
+async def health_check():
+    return {"status": "TDS Project 1 API is running", "version": "1.0.0"}
 
-def push_files_to_repo(repo_name: str, files: dict):
-    username = get_github_username()
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    for filename, content in files.items():
-        content_b64 = base64.b64encode(content.encode('utf-8')).decode('ascii')
-        url = f"https://api.github.com/repos/{username}/{repo_name}/contents/{filename}"
-        existing = requests.get(url, headers=headers)
-        payload = {"message": f"Add {filename}", "content": content_b64}
-        if existing.status_code == 200:
-            payload["sha"] = existing.json()["sha"]
-        response = requests.put(url, headers=headers, json=payload)
-        if response.status_code not in :
-            raise Exception(f"Failed to push {filename}: {response.status_code}, {response.text}")
+@app.post("/handle_task", response_model=TaskResponse)
+async def handle_task(data: TaskRequest):
+    if data.secret != SECRET:
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    try:
+        if data.round == 1:
+            return await handle_round_one(data)
+        elif data.round == 2:
+            return await handle_round_two(data)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid round")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-def enable_github_pages(repo_name: str):
-    username = get_github_username()
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    payload = {"source": {"branch": "main", "path": "/"}}
-    requests.post(
-        f"https://api.github.com/repos/{username}/{repo_name}/pages",
-        headers=headers, json=payload
+async def handle_round_one(data: TaskRequest) -> TaskResponse:
+    files = await generate_code_with_aipipe(data.brief, data.task)
+    repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
+    repo_info = create_github_repo(repo_name)
+    push_files_to_repo(repo_name, files)
+    enable_github_pages(repo_name)
+    return TaskResponse(
+        email=data.email,
+        task=data.task,
+        round=data.round,
+        nonce=data.nonce,
+        repo_url=repo_info["html_url"],
+        commit_sha="main",
+        pages_url=f"https://{get_github_username()}.github.io/{repo_name}"
+    )
+
+async def handle_round_two(data: TaskRequest) -> TaskResponse:
+    files = await generate_code_with_aipipe(f"UPDATE: {data.brief}", data.task)
+    repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
+    push_files_to_repo(repo_name, files)
+    return TaskResponse(
+        email=data.email,
+        task=data.task,
+        round=data.round,
+        nonce=data.nonce,
+        repo_url=f"https://github.com/{get_github_username()}/{repo_name}",
+        commit_sha="main",
+        pages_url=f"https://{get_github_username()}.github.io/{repo_name}"
     )
 
 if __name__ == "__main__":
