@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from typing import List, Optional
 from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, RepoExistsError
-from services.aipipe_service import generate_code_with_aipipe
+from services.gemini_service import generate_code_with_gemini
 
 load_dotenv()
 
@@ -55,7 +55,7 @@ async def handle_task(data: TaskRequest):
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_aipipe(data.brief, data.task)
+    files = await generate_code_with_gemini(data.brief, data.task)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
 
     username = await get_github_username()
@@ -74,7 +74,7 @@ async def handle_round_one(data: TaskRequest) -> TaskResponse:
     )
 
 async def handle_round_two(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_aipipe(f"UPDATE: {data.brief}", data.task)
+    files = await generate_code_with_gemini(f"UPDATE: {data.brief}", data.task)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
 
     username = await get_github_username()
