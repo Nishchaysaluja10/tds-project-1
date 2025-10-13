@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from typing import List, Optional
-from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username
+from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, RepoExistsError
 from services.aipipe_service import generate_code_with_aipipe
 
 load_dotenv()
@@ -47,8 +47,12 @@ async def handle_task(data: TaskRequest):
             return await handle_round_two(data)
         else:
             raise HTTPException(status_code=400, detail="Invalid round")
+    except RepoExistsError as e:
+        raise HTTPException(status_code=409, detail=f"{e} Please use a different 'nonce' and try again.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # It's good practice to log the full error for debugging
+        print(f"An unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
     files = await generate_code_with_aipipe(data.brief, data.task)

@@ -2,6 +2,10 @@ import requests
 import base64
 import os
 
+class RepoExistsError(Exception):
+    """Custom exception for when a repository already exists."""
+    pass
+
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 def get_github_username():
@@ -19,10 +23,14 @@ def create_github_repo(repo_name: str) -> dict:
         "license_template": "mit"
     }
     response = requests.post("https://api.github.com/user/repos", headers=headers, json=payload)
+
     if response.status_code == 201:
         return response.json()
+    elif response.status_code == 422:
+        # This status code is often returned if the repo already exists
+        raise RepoExistsError(f"Repository '{repo_name}' already exists.")
     else:
-        raise Exception(f"Repo creation failed: {response.status_code}, {response.text}")
+        response.raise_for_status() # Raise an exception for other bad responses (4xx or 5xx)
 
 def push_files_to_repo(repo_name: str, files: dict):
     username = get_github_username()
