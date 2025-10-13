@@ -1,4 +1,4 @@
-import requests
+import httpx
 import os
 import re
 
@@ -31,12 +31,14 @@ Return ONLY the HTML code."""
         "max_tokens": 3500,
         "temperature": 0.3
     }
-    response = requests.post(
-        f"{AIPIPE_BASE_URL}/chat/completions",
-        headers=headers,
-        json=payload,
-        timeout=120
-    )
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{AIPIPE_BASE_URL}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=120
+        )
+
     if response.status_code != 200:
         raise Exception(f"AIPipe API error: {response.status_code}: {response.text}")
 

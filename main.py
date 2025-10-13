@@ -57,10 +57,12 @@ async def handle_task(data: TaskRequest):
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
     files = await generate_code_with_aipipe(data.brief, data.task)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
-    repo_info = create_github_repo(repo_name)
-    push_files_to_repo(repo_name, files)
-    enable_github_pages(repo_name)
-    username = get_github_username()
+
+    username = await get_github_username()
+    repo_info = await create_github_repo(repo_name)
+    await push_files_to_repo(repo_name, files, username)
+    await enable_github_pages(repo_name, username)
+
     return TaskResponse(
         email=data.email,
         task=data.task,
@@ -74,8 +76,10 @@ async def handle_round_one(data: TaskRequest) -> TaskResponse:
 async def handle_round_two(data: TaskRequest) -> TaskResponse:
     files = await generate_code_with_aipipe(f"UPDATE: {data.brief}", data.task)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
-    push_files_to_repo(repo_name, files)
-    username = get_github_username()
+
+    username = await get_github_username()
+    await push_files_to_repo(repo_name, files, username)
+
     return TaskResponse(
         email=data.email,
         task=data.task,
