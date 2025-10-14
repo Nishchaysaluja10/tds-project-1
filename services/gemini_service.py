@@ -2,11 +2,15 @@ import os
 import google.generativeai as genai
 import re
 import json
+from dotenv import dotenv_values
 
 async def generate_code_with_gemini(brief: str, task: str, checks: list) -> dict:
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    # Force-read the .env file to bypass any reloading issues
+    config = dotenv_values(".env")
+    GEMINI_API_KEY = config.get("GEMINI_API_KEY")
+
     if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set. Please check your .env file.")
+        raise ValueError("GEMINI_API_KEY is not set or could not be read from .env file.")
 
     # Configure the Gemini API key at the time of use
     genai.configure(api_key=GEMINI_API_KEY)
