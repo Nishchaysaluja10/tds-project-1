@@ -2,13 +2,14 @@ import sys
 
 packages = [
     ("fastapi", "Web Framework"),
-    ("uvicorn", "ASGI Server"), 
+    ("uvicorn", "ASGI Server"),
     ("requests", "HTTP Client"),
-    ("openai", "OpenAI API"),
     ("dotenv", "Environment Variables"),
     ("pydantic", "Data Validation"),
     ("multipart", "File Upload Handler"),
-    ("aiofiles", "Async File Operations")
+    ("aiofiles", "Async File Operations"),
+    ("google.generativeai", "Google Gemini API"),
+    ("httpx", "Async HTTP Client"),
 ]
 
 print("🔍 Testing Dependencies...\n")
