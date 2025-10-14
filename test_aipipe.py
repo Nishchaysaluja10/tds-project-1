@@ -4,7 +4,7 @@ def test_api():
     url = "http://localhost:8000/handle_task"
     data = {
         "email": "test@example.com",
-        "secret": "messi10",  # Your secret
+        "secret": "Messi10",  # Your secret
         "task": "landing_page",
         "round": 1,
         "nonce": "test789",
