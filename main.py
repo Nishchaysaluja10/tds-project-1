@@ -2,13 +2,16 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 from typing import List, Optional
 import httpx
 import asyncio
 from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, RepoExistsError
 from services.gemini_service import generate_code_with_gemini
 
-load_dotenv()
+# Explicitly load .env from the project's root directory to be more robust
+env_path = Path('.') / '.env'
+load_dotenv(dotenv_path=env_path)
 
 app = FastAPI(title="TDS Project 1", description="LLM Code Deployment API")
 
