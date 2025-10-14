@@ -9,20 +9,8 @@ import asyncio
 from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, RepoExistsError
 from services.gemini_service import generate_code_with_gemini
 
-# --- ULTIMATE DEBUGGING: READ AND PRINT .env FILE ---
-print("---" * 10)
-print("DEBUG: Attempting to read .env file for ultimate diagnosis.")
-env_path = Path('.') / '.env'
-if env_path.is_file():
-    print(f"SUCCESS: Found .env file at: {env_path.resolve()}")
-    print("File Contents:")
-    print(env_path.read_text())
-else:
-    print(f"FAILURE: Could not find .env file at path: {env_path.resolve()}")
-print("---" * 10)
-# --- END DEBUGGING ---
-
 # Explicitly load .env from the project's root directory to be more robust
+env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 
 app = FastAPI(title="TDS Project 1", description="LLM Code Deployment API")
