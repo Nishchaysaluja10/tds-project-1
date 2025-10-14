@@ -57,7 +57,8 @@ async def handle_task(data: TaskRequest):
     except Exception as e:
         # It's good practice to log the full error for debugging
         print(f"An unexpected error occurred: {e}")
-        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+        # Return the actual error for debugging purposes
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
     files = await generate_code_with_gemini(data.brief, data.task, data.checks)
