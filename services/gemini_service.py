@@ -3,14 +3,13 @@ import google.generativeai as genai
 import re
 import json
 
-# Configure the Gemini API key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
 async def generate_code_with_gemini(brief: str, task: str, checks: list) -> dict:
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not set. Please check your .env file.")
+
+    # Configure the Gemini API key at the time of use
+    genai.configure(api_key=GEMINI_API_KEY)
 
     # Set up the model
     generation_config = {
