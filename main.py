@@ -157,4 +157,6 @@ async def notify_evaluation_url(evaluation_url: str, payload: dict):
 
 if __name__ == "__main__":
     import uvicorn
+    # Running the app directly with "python main.py" will use these settings.
+    # This is a robust way to ensure all routes are loaded correctly.
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
