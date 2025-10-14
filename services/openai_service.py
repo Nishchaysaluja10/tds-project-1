@@ -1,30 +1,17 @@
 import os
-import google.generativeai as genai
-import re
+from openai import AsyncOpenAI
 import json
 from dotenv import dotenv_values
 
-async def generate_code_with_gemini(brief: str, task: str, checks: list) -> dict:
+async def generate_code_with_openai(brief: str, task: str, checks: list) -> dict:
     # Force-read the .env file to bypass any reloading issues
     config = dotenv_values(".env")
-    GEMINI_API_KEY = config.get("GEMINI_API_KEY")
+    OPENAI_API_KEY = config.get("OPENAI_API_KEY")
 
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set or could not be read from .env file.")
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not set or could not be read from .env file.")
 
-    # Configure the Gemini API key at the time of use
-    genai.configure(api_key=GEMINI_API_KEY)
-
-    # Set up the model
-    generation_config = {
-      "temperature": 0.4,
-      "top_p": 1,
-      "top_k": 1,
-      "max_output_tokens": 8192,
-      "response_mime_type": "application/json",
-    }
-    model = genai.GenerativeModel(model_name="gemini-1.5-flash",
-                                  generation_config=generation_config)
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
     checks_list = "\n".join([f"- {c}" for c in checks])
 
@@ -68,15 +55,20 @@ Example of the required JSON output:
 ```
 """
 
-    convo = model.start_chat()
-    await convo.send_message_async(prompt)
-    response_text = convo.last.text
+    response = await client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are an expert web developer that only responds with JSON."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+
+    response_text = response.choices[0].message.content
 
     try:
-        # The response should be a JSON string, so we parse it.
         result = json.loads(response_text)
 
-        # Basic validation to ensure the LLM returned the correct structure.
         if "index_html" not in result or "readme_md" not in result:
             raise ValueError("LLM response is missing required keys.")
 
@@ -87,7 +79,6 @@ Example of the required JSON output:
     except (json.JSONDecodeError, ValueError) as e:
         print(f"Error parsing LLM response: {e}")
         print(f"Raw response was: {response_text}")
-        # Fallback in case the LLM fails to produce valid JSON
         return {
             "index.html": "<html><body><h1>Error: Could not generate code.</h1></body></html>",
             "README.md": f"# Error\n\nCould not generate project files. The LLM response was invalid.\n\nRaw response:\n```\n{response_text}\n```"
