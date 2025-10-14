@@ -7,7 +7,7 @@ from typing import List, Optional
 import httpx
 import asyncio
 from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, RepoExistsError
-from services.gemini_service import generate_code_with_gemini
+from services.openai_service import generate_code_with_openai
 
 # Explicitly load .env from the project's root directory to be more robust
 env_path = Path('.') / '.env'
@@ -60,7 +60,7 @@ async def handle_task(data: TaskRequest):
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_gemini(data.brief, data.task, data.checks)
+    files = await generate_code_with_openai(data.brief, data.task, data.checks)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
 
     username = await get_github_username()
@@ -93,7 +93,7 @@ async def handle_round_one(data: TaskRequest) -> TaskResponse:
     )
 
 async def handle_round_two(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_gemini(f"UPDATE: {data.brief}", data.task, data.checks)
+    files = await generate_code_with_openai(f"UPDATE: {data.brief}", data.task, data.checks)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
 
     username = await get_github_username()
