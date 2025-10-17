@@ -1,20 +1,21 @@
-# Use the official Python 3.11 image
+# Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Set the working directory inside the container
-WORKDIR /app
+# Set the working directory in the container
+WORKDIR /code
 
-# Copy the requirements file into the container
-COPY requirements.txt .
+# Copy the requirements file into the container at /code
+COPY ./requirements.txt /code/requirements.txt
 
-# Install the dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# Copy the rest of the application code into the container
-COPY . .
+# Copy the rest of the application's code into the container at /code
+COPY . /code/
 
-# Expose the port the app will run on
+# Make port 8000 available to the world outside this container
 EXPOSE 8000
 
 # Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# We use port 7860 because it's the standard for Hugging Face Spaces
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
