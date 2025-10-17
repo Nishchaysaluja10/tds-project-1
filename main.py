@@ -8,6 +8,7 @@ import httpx
 import asyncio
 from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, get_file_content, RepoExistsError
 from services.gemini_service import generate_code_with_gemini
+import traceback
 
 # Explicitly load .env from the project's root directory to be more robust
 env_path = Path('.') / '.env'
@@ -55,7 +56,6 @@ async def handle_task(data: TaskRequest):
     except RepoExistsError as e:
         raise HTTPException(status_code=409, detail=f"{e} Please use a different 'nonce' and try again.")
     except Exception as e:
-        import traceback
         tb_str = traceback.format_exc()
         print(f"An unexpected error occurred: {e}\n{tb_str}")
         raise HTTPException(status_code=500, detail=f"An internal server error occurred: {str(e)}\nTraceback:\n{tb_str}")
