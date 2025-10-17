@@ -7,7 +7,7 @@ from typing import List, Optional
 import httpx
 import asyncio
 from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, get_file_content, RepoExistsError
-from services.gemini_service import generate_code_with_gemini
+from services.aipipe_service import generate_code_with_aipipe
 import traceback
 
 # Explicitly load .env from the project's root directory to be more robust
@@ -61,7 +61,7 @@ async def handle_task(data: TaskRequest):
         raise HTTPException(status_code=500, detail=f"An internal server error occurred: {str(e)}\nTraceback:\n{tb_str}")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_gemini(
+    files = await generate_code_with_aipipe(
         brief=data.brief,
         task=data.task,
         checks=data.checks,
@@ -108,7 +108,7 @@ async def handle_round_two(data: TaskRequest) -> TaskResponse:
         raise HTTPException(status_code=404, detail="Original 'index.html' not found in the repository for Round 2.")
 
     # Generate the updated code
-    files = await generate_code_with_gemini(
+    files = await generate_code_with_aipipe(
         brief=data.brief,
         task=data.task,
         checks=data.checks,
