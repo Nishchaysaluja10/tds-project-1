@@ -55,9 +55,10 @@ async def handle_task(data: TaskRequest):
     except RepoExistsError as e:
         raise HTTPException(status_code=409, detail=f"{e} Please use a different 'nonce' and try again.")
     except Exception as e:
-        # It's good practice to log the full error for debugging
-        print(f"An unexpected error occurred: {e}")
-        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+        import traceback
+        tb_str = traceback.format_exc()
+        print(f"An unexpected error occurred: {e}\n{tb_str}")
+        raise HTTPException(status_code=500, detail=f"An internal server error occurred: {str(e)}\nTraceback:\n{tb_str}")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
     files = await generate_code_with_gemini(
