@@ -13,7 +13,7 @@ def test_api():
         "evaluation_url": "",
         "attachments": []
     }
-    
+
     response = requests.post(url, json=data)
     if response.status_code == 200:
         result = response.json()
