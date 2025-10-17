@@ -109,7 +109,7 @@ Example:
 ```
 """
 
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.0-pro')
     response = await model.generate_content_async(prompt)
     response_text = response.text
 

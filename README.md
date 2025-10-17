@@ -1,10 +1,10 @@
 # TDS Project 1: LLM Code Deployment API
 
-This project is a FastAPI application that automates the process of generating and deploying simple web applications using an AI service (Gemini) and GitHub.
+This project is a FastAPI application that automates the process of generating and deploying simple web applications using the Google Gemini API and GitHub.
 
 ## Features
 
-- **Automated Code Generation:** Leverages the Gemini service to generate HTML, CSS, and JavaScript code based on a given prompt.
+- **Automated Code Generation:** Leverages the Gemini API to generate HTML, CSS, and JavaScript code based on a given prompt.
 - **GitHub Integration:** Automatically creates a new GitHub repository for each generated application.
 - **Automated Deployment:** Deploys the generated website to GitHub Pages, making it instantly accessible online.
 - **Two-Round Workflow:** Supports an initial creation (Round 1) and a subsequent update (Round 2) of the web application.
@@ -15,7 +15,7 @@ This project is a FastAPI application that automates the process of generating a
 
 - Python 3.7+
 - A GitHub account and a personal access token with `repo` permissions.
-- An Gemini API key.
+- A Google Gemini API key.
 
 ### Installation
 
@@ -66,6 +66,8 @@ You can interact with the API by sending POST requests to the `/handle_task` end
 - `round` (int): The task round (1 for creation, 2 for update).
 - `nonce` (str): A unique identifier for the task.
 - `brief` (str): A detailed description of the web application you want to create or update.
+- `attachments` (list): A list of dictionaries, each representing a file to be used in the task.
+- `checks` (list): A list of JavaScript expressions that the generated code must pass.
 
 ### Example Request
 
