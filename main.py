@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Optional
 import httpx
 import asyncio
-from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, RepoExistsError
+from services.github_service import create_github_repo, push_files_to_repo, enable_github_pages, get_github_username, get_file_content, RepoExistsError
 from services.gemini_service import generate_code_with_gemini
 
 # Explicitly load .env from the project's root directory to be more robust
@@ -60,7 +60,12 @@ async def handle_task(data: TaskRequest):
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 async def handle_round_one(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_gemini(data.brief, data.task, data.checks)
+    files = await generate_code_with_gemini(
+        brief=data.brief,
+        task=data.task,
+        checks=data.checks,
+        attachments=data.attachments
+    )
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
 
     username = await get_github_username()
@@ -93,10 +98,23 @@ async def handle_round_one(data: TaskRequest) -> TaskResponse:
     )
 
 async def handle_round_two(data: TaskRequest) -> TaskResponse:
-    files = await generate_code_with_gemini(f"UPDATE: {data.brief}", data.task, data.checks)
     repo_name = f"{data.task}_{data.nonce}".replace(" ", "_").lower()
-
     username = await get_github_username()
+
+    # Get the existing code from the repo
+    existing_code = await get_file_content(repo_name, username, "index.html")
+    if existing_code is None:
+        raise HTTPException(status_code=404, detail="Original 'index.html' not found in the repository for Round 2.")
+
+    # Generate the updated code
+    files = await generate_code_with_gemini(
+        brief=data.brief,
+        task=data.task,
+        checks=data.checks,
+        attachments=data.attachments,
+        existing_code=existing_code
+    )
+
     await push_files_to_repo(repo_name, files, username)
 
     pages_url = f"https://{username}.github.io/{repo_name}"

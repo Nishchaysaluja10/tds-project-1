@@ -63,3 +63,21 @@ async def enable_github_pages(repo_name: str, username: str):
             headers=headers, json=payload
         )
     response.raise_for_status()
+
+async def get_file_content(repo_name: str, username: str, filepath: str) -> str:
+    """
+    Fetches the content of a file from a GitHub repository.
+    """
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    url = f"https://api.github.com/repos/{username}/{repo_name}/contents/{filepath}"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+
+    if response.status_code == 200:
+        content_b64 = response.json()['content']
+        return base64.b64decode(content_b64).decode('utf-8')
+    elif response.status_code == 404:
+        return None  # File not found
+    else:
+        response.raise_for_status()
