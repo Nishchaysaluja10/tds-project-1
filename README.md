@@ -1,10 +1,10 @@
 # TDS Project 1: LLM Code Deployment API
 
-This project is a FastAPI application that automates the process of generating and deploying simple web applications using the Google Gemini API and GitHub.
+This project is a FastAPI application that automates the process of generating and deploying simple web applications using the AIPipe.org API and GitHub.
 
 ## Features
 
-- **Automated Code Generation:** Leverages the Gemini API to generate HTML, CSS, and JavaScript code based on a given prompt.
+- **Automated Code Generation:** Leverages the AIPipe.org API to generate HTML, CSS, and JavaScript code based on a given prompt.
 - **GitHub Integration:** Automatically creates a new GitHub repository for each generated application.
 - **Automated Deployment:** Deploys the generated website to GitHub Pages, making it instantly accessible online.
 - **Two-Round Workflow:** Supports an initial creation (Round 1) and a subsequent update (Round 2) of the web application.
@@ -15,7 +15,7 @@ This project is a FastAPI application that automates the process of generating a
 
 - Python 3.7+
 - A GitHub account and a personal access token with `repo` permissions.
-- A Google Gemini API key.
+- An AIPipe.org API key.
 
 ### Installation
 
@@ -37,12 +37,12 @@ This project is a FastAPI application that automates the process of generating a
     ```
     SECRET="your-secret-key"
     GITHUB_TOKEN="your-github-personal-access-token"
-    GEMINI_API_KEY="your-gemini-api-key"
+    AIPIPE_API_KEY="your-aipipe-api-key"
     ```
 
     - `SECRET`: A secret key to authorize requests to your API.
     - `GITHUB_TOKEN`: Your GitHub personal access token.
-    - `GEMINI_API_KEY`: Your API key for the Gemini service.
+    - `AIPIPE_API_KEY`: Your API key for the AIPipe.org service.
 
 ### Running the Application
 

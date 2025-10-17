@@ -1,17 +1,22 @@
 import os
-import google.generativeai as genai
+import httpx
 import json
 from dotenv import dotenv_values
 import base64
 
-async def generate_code_with_gemini(brief: str, task: str, checks: list, attachments: list, existing_code: str = None) -> dict:
+AIPIPE_API_URL = "https://www.aipipe.org/api/v1/chat/completions"
+
+async def generate_code_with_aipipe(brief: str, task: str, checks: list, attachments: list, existing_code: str = None) -> dict:
     config = dotenv_values(".env")
-    GEMINI_API_KEY = config.get("GEMINI_API_KEY")
+    AIPIPE_API_KEY = config.get("AIPIPE_API_KEY")
 
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set or could not be read from .env file.")
+    if not AIPIPE_API_KEY:
+        raise ValueError("AIPIPE_API_KEY is not set or could not be read from .env file.")
 
-    genai.configure(api_key=GEMINI_API_KEY)
+    headers = {
+        "Authorization": f"Bearer {AIPIPE_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
     # Prepare the attachments content for the prompt
     attachments_content = ""
@@ -99,7 +104,7 @@ The code you write MUST pass these JavaScript-based checks. Ensure your script l
         *   A **License** section stating "This project is licensed under the MIT License."
 
 **Output Format:**
-You MUST return a single, valid JSON object with two keys: `index_html` and `readme_md`. The values must be strings containing the full content of the respective files.
+You MUST return a single, valid JSON object. Do not include any text or markdown formatting outside of the JSON structure.
 Example:
 ```json
 {{
@@ -109,13 +114,22 @@ Example:
 ```
 """
 
-    model = genai.GenerativeModel('gemini-1.0-pro')
-    response = await model.generate_content_async(prompt)
-    response_text = response.text
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": "You are an expert web developer that only responds with JSON."},
+            {"role": "user", "content": prompt}
+        ],
+        "response_format": {"type": "json_object"}
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(AIPIPE_API_URL, headers=headers, json=payload, timeout=120)
+
+    response.raise_for_status()
+    response_text = response.json()["choices"][0]["message"]["content"]
 
     try:
-        if response_text.startswith("```json"):
-            response_text = response_text[7:-4].strip()
         result = json.loads(response_text)
 
         if existing_code:
