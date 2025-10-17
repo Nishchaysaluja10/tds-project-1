@@ -1,17 +1,17 @@
 import os
-from openai import AsyncOpenAI
+import google.generativeai as genai
 import json
 from dotenv import dotenv_values
 
-async def generate_code_with_openai(brief: str, task: str, checks: list) -> dict:
+async def generate_code_with_gemini(brief: str, task: str, checks: list) -> dict:
     # Force-read the .env file to bypass any reloading issues
     config = dotenv_values(".env")
-    OPENAI_API_KEY = config.get("OPENAI_API_KEY")
+    GEMINI_API_KEY = config.get("GEMINI_API_KEY")
 
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY is not set or could not be read from .env file.")
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set or could not be read from .env file.")
 
-    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
 
     checks_list = "\n".join([f"- {c}" for c in checks])
 
@@ -55,18 +55,16 @@ Example of the required JSON output:
 ```
 """
 
-    response = await client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are an expert web developer that only responds with JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
+    model = genai.GenerativeModel('gemini-pro')
+    response = await model.generate_content_async(prompt)
 
-    response_text = response.choices[0].message.content
+    response_text = response.text
 
     try:
+        # The response from Gemini might be wrapped in markdown, so we need to extract the JSON
+        if response_text.startswith("```json"):
+            response_text = response_text[7:-4]
+
         result = json.loads(response_text)
 
         if "index_html" not in result or "readme_md" not in result:
